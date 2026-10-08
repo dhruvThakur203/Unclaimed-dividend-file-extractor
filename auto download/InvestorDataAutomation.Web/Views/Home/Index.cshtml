@@ -1,0 +1,327 @@
+@model List<InvestorDataAutomation.Core.Models.Company>
+@{
+    ViewData["Title"] = "Dashboard";
+    var summary = ViewBag.Summary as InvestorDataAutomation.Core.DTOs.ProcessingSummaryDto;
+    var currentFilter = ViewBag.StatusFilter as string;
+    var currentSearch = ViewBag.Search as string;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-primary me-2"></i>Investor Data Collection Dashboard</h2>
+        <p class="text-muted mb-0">Automated web discovery, crawling, document classification, and bulk PDF/Excel downloading.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="bi bi-upload me-1"></i> Upload Companies (companies.xlsx)
+        </button>
+        <a href="/Home/ExportReport" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Report
+        </a>
+    </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="card mb-4 bg-white shadow-sm">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fw-semibold text-secondary">Execution State:</span>
+            @if (summary?.IsRunning == true)
+            {
+                if (summary.IsPaused)
+                {
+                    <span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-pause-circle-fill me-1"></i> Paused</span>
+                }
+                else
+                {
+                    <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-gear-wide-connected spinner-border spinner-border-sm me-1"></i> Processing Active</span>
+                }
+            }
+            else
+            {
+                <span class="badge bg-secondary fs-6 px-3 py-2"><i class="bi bi-stop-circle-fill me-1"></i> Idle</span>
+            }
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            @if (summary?.IsRunning != true || summary.IsPaused)
+            {
+                <form asp-action="Start" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-play-fill me-1"></i> Start Processing</button>
+                </form>
+            }
+            @if (summary?.IsRunning == true && !summary.IsPaused)
+            {
+                <form asp-action="Pause" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-pause-fill me-1"></i> Pause</button>
+                </form>
+            }
+            @if (summary?.IsPaused == true)
+            {
+                <form asp-action="Resume" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-play-circle-fill me-1"></i> Resume</button>
+                </form>
+            }
+            <form asp-action="RetryFailed" method="post" class="d-inline">
+                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-arrow-counterclockwise me-1"></i> Retry Failed</button>
+            </form>
+            <form asp-action="ClearAll" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to clear all companies and documents?');">
+                <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-trash me-1"></i> Clear All</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card kpi-card p-3 border-0 bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-buildings"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold">Total Companies</div>
+                    <div class="fs-4 fw-bold" id="kpiTotal">@(summary?.TotalCompanies ?? 0)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card kpi-card p-3 border-0 bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle-fill"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold">Completed</div>
+                    <div class="fs-4 fw-bold text-success" id="kpiCompleted">@(summary?.Completed ?? 0)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card kpi-card p-3 border-0 bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-arrow-repeat"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold">Processing</div>
+                    <div class="fs-4 fw-bold text-info" id="kpiProcessing">@(summary?.Processing ?? 0)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card kpi-card p-3 border-0 bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-eye"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold">Needs Review</div>
+                    <div class="fs-4 fw-bold text-warning" id="kpiNeedsReview">@(summary?.NeedsReview ?? 0)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card kpi-card p-3 border-0 bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-octagon"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold">Failed</div>
+                    <div class="fs-4 fw-bold text-danger" id="kpiFailed">@(summary?.Failed ?? 0)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card kpi-card p-3 border-0 bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon bg-secondary bg-opacity-10 text-dark"><i class="bi bi-file-earmark-arrow-down"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold">Downloaded Docs</div>
+                    <div class="fs-4 fw-bold text-dark" id="kpiDownloaded">@(summary?.DocumentsDownloaded ?? 0)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-md-8 d-flex flex-wrap gap-2">
+                <a href="/Home/Index" class="btn btn-sm @(string.IsNullOrEmpty(currentFilter) ? "btn-dark" : "btn-outline-secondary")">All</a>
+                <a href="/Home/Index?statusFilter=Completed" class="btn btn-sm @(currentFilter == "Completed" ? "btn-success" : "btn-outline-success")">Completed</a>
+                <a href="/Home/Index?statusFilter=Processing" class="btn btn-sm @(currentFilter == "Processing" ? "btn-info" : "btn-outline-info")">Processing</a>
+                <a href="/Home/Index?statusFilter=Pending" class="btn btn-sm @(currentFilter == "Pending" ? "btn-secondary" : "btn-outline-secondary")">Pending</a>
+                <a href="/Home/Index?statusFilter=NeedsReview" class="btn btn-sm @(currentFilter == "NeedsReview" ? "btn-warning" : "btn-outline-warning")">Needs Review</a>
+                <a href="/Home/Index?statusFilter=Failed" class="btn btn-sm @(currentFilter == "Failed" ? "btn-danger" : "btn-outline-danger")">Failed</a>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="search" class="form-control" placeholder="Search company name or symbol..." value="@currentSearch" />
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Company Table -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Company Name</th>
+                        <th>Symbols</th>
+                        <th>Official Website</th>
+                        <th>Confidence</th>
+                        <th>Status</th>
+                        <th>Docs Found</th>
+                        <th>Downloaded</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model == null || Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No companies found. Upload <code>companies.xlsx</code> to begin!
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var company in Model)
+                        {
+                            var badgeClass = company.Status switch
+                            {
+                                InvestorDataAutomation.Core.Models.CompanyStatus.Completed => "badge-completed",
+                                InvestorDataAutomation.Core.Models.CompanyStatus.Processing => "badge-processing",
+                                InvestorDataAutomation.Core.Models.CompanyStatus.Pending => "badge-pending",
+                                InvestorDataAutomation.Core.Models.CompanyStatus.NeedsReview => "badge-needsreview",
+                                InvestorDataAutomation.Core.Models.CompanyStatus.Failed => "badge-failed",
+                                InvestorDataAutomation.Core.Models.CompanyStatus.Partial => "badge-partial",
+                                _ => "badge-pending"
+                            };
+
+                            var docsCount = company.Documents?.Count ?? 0;
+                            var downloadedCount = company.Documents?.Count(d => d.Downloaded) ?? 0;
+
+                            <tr>
+                                <td>@company.Id</td>
+                                <td class="fw-semibold">
+                                    <a href="/Home/Details/@company.Id" class="text-decoration-none text-dark">
+                                        @company.CompanyName
+                                    </a>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(company.NSESymbol))
+                                    {
+                                        <span class="badge bg-light text-dark border">NSE: @company.NSESymbol</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(company.BSECode))
+                                    {
+                                        <span class="badge bg-light text-dark border">BSE: @company.BSECode</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(company.Website))
+                                    {
+                                        <a href="@company.Website" target="_blank" class="text-truncate d-inline-block" style="max-width: 200px;">
+                                            @company.Website
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Not Discovered</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (company.WebsiteConfidence > 0)
+                                    {
+                                        <div class="progress" style="height: 14px; width: 80px;" title="@company.WebsiteConfidence.ToString("P0")">
+                                            <div class="progress-bar bg-@(company.WebsiteConfidence >= 0.8 ? "success" : company.WebsiteConfidence >= 0.6 ? "warning" : "danger")"
+                                                 style="width: @(company.WebsiteConfidence * 100)%">
+                                                @company.WebsiteConfidence.ToString("P0")
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge-status @badgeClass">@company.Status</span>
+                                </td>
+                                <td><span class="fw-bold">@docsCount</span></td>
+                                <td><span class="fw-bold text-success">@downloadedCount</span></td>
+                                <td>
+                                    <a href="/Home/Details/@company.Id" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="UploadExcel" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-upload text-primary me-2"></i>Upload Company List</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Upload an Excel file (<code>companies.xlsx</code>) containing columns: <strong>Company Name</strong>, and optional <strong>NSE Symbol</strong>, <strong>BSE Code</strong>, <strong>Website</strong>.</p>
+                    <div class="mb-3">
+                        <label class="form-label font-semibold">Select Excel File</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Upload & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Live summary polling every 3 seconds
+        setInterval(function() {
+            fetch('/Home/GetSummaryApi')
+                .then(r => r.json())
+                .then(summary => {
+                    if (summary) {
+                        document.getElementById('kpiTotal').innerText = summary.totalCompanies;
+                        document.getElementById('kpiCompleted').innerText = summary.completed;
+                        document.getElementById('kpiProcessing').innerText = summary.processing;
+                        document.getElementById('kpiNeedsReview').innerText = summary.needsReview;
+                        document.getElementById('kpiFailed').innerText = summary.failed;
+                        document.getElementById('kpiDownloaded').innerText = summary.documentsDownloaded;
+
+                        if (summary.isRunning && !summary.isPaused) {
+                            // Automatically reload page every 8s if actively processing
+                            if (!window.lastReload || new Date() - window.lastReload > 8000) {
+                                window.lastReload = new Date();
+                                location.reload();
+                            }
+                        }
+                    }
+                })
+                .catch(err => console.log(err));
+        }, 3000);
+    </script>
+}

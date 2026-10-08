@@ -1,0 +1,112 @@
+# =====================================================================
+# InvestorDataAutomation (.NET 9 / ASP.NET MVC / EF Core SQLite / Playwright)
+# Repository root contains "auto download/InvestorDataAutomation.sln".
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# .NET build output
+# (also covers bin/Debug/net9.0/.playwright, the copied Playwright driver,
+#  and the copied bin/**/appsettings*.json)
+# ---------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]64/
+publish/
+artifacts/
+*.nupkg
+*.snupkg
+
+# ---------------------------------------------------------------------
+# IDE / editor (Visual Studio, Rider, VS Code)
+# ---------------------------------------------------------------------
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+.idea/
+*.sln.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ---------------------------------------------------------------------
+# Test output / coverage
+# ---------------------------------------------------------------------
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.json
+coverage*.xml
+*.coverage
+*.coveragexml
+StrykerOutput/
+
+# ---------------------------------------------------------------------
+# Playwright runtime artifacts (browsers themselves live in %LOCALAPPDATA%)
+# ---------------------------------------------------------------------
+.playwright/
+playwright-report/
+test-results/
+
+# ---------------------------------------------------------------------
+# Crawler downloads (CrawlOptions.StorageDirectory = "InvestorData")
+# Layout: InvestorData/<Company>/<DocumentType>/<file>.pdf|.xls|.xlsx|.doc|.docx
+# Ignored wherever the app runs from (project dir, bin, publish dir).
+# ---------------------------------------------------------------------
+InvestorData/
+
+# In-flight downloads written by DocumentDownloader ("<file>.part")
+*.part
+
+# ---------------------------------------------------------------------
+# Local database (ConnectionStrings:DefaultConnection = investor_data.db)
+# ---------------------------------------------------------------------
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ---------------------------------------------------------------------
+# Logs (Serilog rolling file: Logs/investor_automation_<yyyyMMdd>.log)
+# ---------------------------------------------------------------------
+[Ll]ogs/
+*.log
+
+# ---------------------------------------------------------------------
+# Local configuration / secrets
+# Committed: appsettings.json, appsettings.Development.json (no secrets).
+# Put machine-specific overrides / credentials in these instead:
+# ---------------------------------------------------------------------
+appsettings.*.local.json
+appsettings.Local.json
+appsettings.Production.json
+secrets.json
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+
+# ---------------------------------------------------------------------
+# Temporary / OS files
+# ---------------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+~$*
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
